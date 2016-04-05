@@ -726,8 +726,8 @@ namespace Salesforce.SDK.SmartStore.Store
             int columnCount = statement.ColumnCount;
             for (int i = 0; i < columnCount; i++)
             {
-                if (statement.ColumnName(i).EndsWith(SoupCol))
-                {
+                if (statement.ColumnName(i).EndsWith(SoupCol) || statement.ColumnName(i).StartsWith(SoupCol))
+				{
                     string raw = statement.GetText(i);
                     row.Add(JObject.Parse(raw));
                 }
@@ -750,7 +750,21 @@ namespace Salesforce.SDK.SmartStore.Store
                             }
                             else
                             {
-                                row.Add(raw.ToString());
+                                string rawString = raw.ToString();
+                                if (rawString.Contains('{'))
+                                {
+                                    try {
+                                        row.Add(JObject.Parse(rawString));
+                                    } 
+                                    catch (Exception)
+                                    {
+                                        row.Add(raw.ToString());
+                                    }
+                                }
+                                else
+                                {
+                                    row.Add(raw.ToString());
+                                }
                             }
                         }
                     }
