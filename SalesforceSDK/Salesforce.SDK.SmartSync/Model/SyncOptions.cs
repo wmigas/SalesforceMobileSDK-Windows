@@ -48,6 +48,12 @@ namespace Salesforce.SDK.SmartSync.Model
 
         public List<string> FieldList { private set; get; }
 
+        public List<String> fieldsToExcludeOnUpdate = new List<String>();
+        public void setFieldsToExcludeOnUpdate(List<String> fieldsToExclude)
+        {
+            fieldsToExcludeOnUpdate = fieldsToExclude;
+        }
+
         public static SyncOptions FromJson(JObject options)
         {
             if (options == null)
@@ -57,7 +63,10 @@ namespace Salesforce.SDK.SmartSync.Model
                 ? SyncState.MergeModeOptions.None
                 : (SyncState.MergeModeOptions) Enum.Parse(typeof (SyncState.MergeModeOptions), mergeModeStr);
             var array = options.ExtractValue<JArray>(Constants.FieldList);
-            return new SyncOptions(array.ToObject<List<string>>(), mergeMode);
+            SyncOptions so = new SyncOptions(array.ToObject<List<string>>(), mergeMode);
+            array = options.ExtractValue<JArray>("fieldsToExcludeOnUpdate");
+            so.setFieldsToExcludeOnUpdate(array.ToObject<List<string>>());
+            return so;
         }
 
         public static SyncOptions OptionsForSyncUp(List<string> fieldList, SyncState.MergeModeOptions mergeMode = SyncState.MergeModeOptions.Overwrite)
@@ -72,7 +81,7 @@ namespace Salesforce.SDK.SmartSync.Model
 
         public JObject AsJson()
         {
-            var options = new JObject {{Constants.FieldList, new JArray(FieldList)}};
+            var options = new JObject { { Constants.FieldList, new JArray(FieldList) }, { "fieldsToExcludeOnUpdate", new JArray(fieldsToExcludeOnUpdate) } };
             if (MergeMode != SyncState.MergeModeOptions.None) options.Add(Constants.MergeMode, MergeMode.ToString());
             return options;
         }

@@ -216,7 +216,7 @@ namespace Salesforce.SDK.SmartSync.Manager
             }
             catch (Exception fail)
             {
-                Debug.WriteLine("SmartSyncManager:runSync, Error during sync: " + sync.Id);
+                //Debug.WriteLine("SmartSyncManager:runSync, Error during sync: " + sync.Id);
                 UpdateSync(sync, SyncState.SyncStatusTypes.Failed, SyncDownTarget.Unchanged, callback);
             }
         }
@@ -235,14 +235,31 @@ namespace Salesforce.SDK.SmartSync.Manager
                     dirtyRecordIds.Select(
                         id => _smartStore.Retrieve(sync.SoupName, long.Parse(id))[0].ToObject<JObject>()))
             {
-                await SyncUpOneRecord(target, sync.SoupName, sync.Options.FieldList, record, sync.MergeMode);
-
-                i++;
+                List<string> fields = sync.Options.FieldList;
+                if (record.ExtractValue<bool>(LocallyDeleted)) { }
+                else if (record.ExtractValue<bool>(LocallyCreated)) { }
+                else if (record.ExtractValue<bool>(LocallyUpdated))
+                {
+                    foreach (string value in sync.Options.fieldsToExcludeOnUpdate)
+                        if(fields.Contains(value))
+                        {
+                            fields.Remove(value);
+                        }
+                }
+                bool res = await SyncUpOneRecord(target, sync.SoupName, fields, record, sync.MergeMode);
+                if (res)
+                {
+                    i++;
+                }
                 int progress = i * 100 / totalSize;
                 if (progress < 100)
                 {
                     UpdateSync(sync, SyncState.SyncStatusTypes.Running, progress, callback);
                 }
+            }
+            if (i<totalSize)
+            {
+                throw new SmartStoreException("Cannot sync all records");
             }
         }
 
@@ -326,6 +343,11 @@ namespace Salesforce.SDK.SmartSync.Manager
                         record[target.GetId()] = recordServerId;
                         CleanAndSaveRecord(soupName, record);
                     }
+                    else
+                    {
+                        //@todo: error handling
+                        return false;
+                    }
                     break;
                 case SyncAction.Delete:
                     if (await target.DeleteOnServer(this, objectType, objectId))
@@ -333,16 +355,26 @@ namespace Salesforce.SDK.SmartSync.Manager
                         _smartStore.Delete(soupName,
                         new[] { record.ExtractValue<long>(SmartStore.Store.SmartStore.SoupEntryId) }, false);
                     }
+                    else
+                    {
+                        //@todo: error handling
+                        return false;
+                    }
                     break;
                 case SyncAction.Update:
                     if (await target.UpdateOnServer(this, objectType, objectId, fields))
                     {
                         CleanAndSaveRecord(soupName, record);
                     }
+                    else
+                    {
+                        //@todo: error handling
+                        return false;
+                    }
                     break;
             }
 
-            return false;
+            return true;
         }
 
 
@@ -365,9 +397,12 @@ namespace Salesforce.SDK.SmartSync.Manager
             int totalSize = target.TotalSize;
             sync.TotalSize = totalSize;
             UpdateSync(sync, SyncState.SyncStatusTypes.Running, 0, callback);
-            while (records != null)
+            while (records != null && records.Count >0)
             {
-                SaveRecordsToSmartStore(sync.SoupName, records, sync.MergeMode);
+                //BEGIN FIX UI freeze on saving 2000 records
+                //SaveRecordsToSmartStore(sync.SoupName, records, sync.MergeMode);
+                await Task.Run(() => SaveRecordsToSmartStore(sync.SoupName, records, sync.MergeMode));
+                //END FIX
                 countSaved += records.Count;
                 maxTimeStamp = Math.Max(maxTimeStamp, target.GetMaxTimeStamp(records));
                 if (countSaved < totalSize)
