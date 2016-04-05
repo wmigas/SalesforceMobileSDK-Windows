@@ -183,7 +183,7 @@ namespace Salesforce.SDK.SmartSync.Util
         public static T ExtractValue<T>(this JObject obj, string valueName)
         {
             JToken value = null;
-            if (obj.TryGetValue(valueName, out value))
+            if (obj.TryGetValue(valueName, out value) && value.Type != JTokenType.Null)
             {
                 return value.Value<T>();
             }
