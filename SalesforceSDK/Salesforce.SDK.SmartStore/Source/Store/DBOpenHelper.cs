@@ -74,7 +74,8 @@ namespace Salesforce.SDK.SmartStore.Store
             {
                 if (!_openHelpers.TryGetValue(uniqueId, out helper))
                 {
-                    helper = new DBOpenHelper(dbName);
+                    helper = new DBOpenHelper(String.Format(DBName, uniqueId));
+                    _openHelpers.Add(uniqueId, helper);
                 }
             }
             return helper;
