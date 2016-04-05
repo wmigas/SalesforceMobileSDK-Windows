@@ -48,7 +48,11 @@ namespace Salesforce.SDK.SmartSync.Model
             Query = query;
         }
 
-
+        public bool skipGroupingParenthesis = false;
+        public void setSkipGroupingParenthesis(bool skip)
+        {
+            skipGroupingParenthesis = skip;
+        }
         public SoqlSyncDownTarget(JObject target) : base(target)
         {
             this.Query = target.ExtractValue<string>(QueryString);
@@ -67,7 +71,9 @@ namespace Salesforce.SDK.SmartSync.Model
             if (target == null) return null;
 
             var query = target.ExtractValue<string>(Constants.Query);
-            return new SoqlSyncDownTarget(query);
+            SoqlSyncDownTarget ssdt = new SoqlSyncDownTarget(query);
+            ssdt.setSkipGroupingParenthesis(target.ExtractValue<bool>("skipGroupingParenthesis"));
+            return ssdt;
         }
 
         /// <summary>
@@ -77,14 +83,21 @@ namespace Salesforce.SDK.SmartSync.Model
         {
             var target = base.AsJson();
             if (!String.IsNullOrWhiteSpace(Query)) target[Constants.Query] = Query;
+            target["skipGroupingParenthesis"] = skipGroupingParenthesis;
             return target;
         }
 
         public override async Task<JArray> StartFetch(SyncManager syncManager, long maxTimeStamp)
         {
-            string queryToRun = maxTimeStamp > 0 ? AddFilterForReSync(Query, maxTimeStamp) : Query;
+            string queryToRun = maxTimeStamp > 0 ? AddFilterForReSync(Query, maxTimeStamp, skipGroupingParenthesis) : Query;
             RestRequest request = RestRequest.GetRequestForQuery(syncManager.ApiVersion, queryToRun);
             RestResponse response = await syncManager.SendRestRequest(request);
+            if (response.Success == false)
+            {
+                TotalSize = -1;
+                NextRecordsUrl = null;
+                return null;
+            }
             JObject responseJson = response.AsJObject;
             var records = responseJson.ExtractValue<JArray>(Constants.Records);
 

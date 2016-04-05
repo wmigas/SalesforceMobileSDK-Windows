@@ -94,7 +94,7 @@ namespace Salesforce.SDK.SmartSync.Model
             throw new SmartStoreException("Could not generate SyncDownTarget from json target");
         }
 
-        public static string AddFilterForReSync(string query, long maxTimeStamp)
+        public static string AddFilterForReSync(string query, long maxTimeStamp, bool skipGroupingParenthesis = false)
         {
             if (maxTimeStamp != Unchanged)
             {
@@ -103,7 +103,14 @@ namespace Salesforce.SDK.SmartSync.Model
                 if (query.Contains(" where "))
                 {
                     var reg = new Regex("( where )");
-                    query = reg.Replace(query, "$1 where " + extraPredicate + " and ", 1);
+                    if (skipGroupingParenthesis)
+                    {
+                        query = reg.Replace(query, "$1 " + extraPredicate + " and ", 1);
+                    }
+                    else
+                    {
+                        query = reg.Replace(query, "$1 (" + extraPredicate + ") and (", 1) + ")";
+                    }
                 }
                 else
                 {
@@ -169,7 +176,7 @@ namespace Salesforce.SDK.SmartSync.Model
                     }
                     try
                     {
-                        long timeStamp = Convert.ToDateTime(date).Ticks;
+                        long timeStamp = Convert.ToDateTime(date).ToUniversalTime().Ticks;
                         maxTimeStamp = Math.Max(timeStamp, maxTimeStamp);
                     }
                     catch (Exception)
