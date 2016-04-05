@@ -229,7 +229,7 @@ namespace Salesforce.SDK.SmartSync.Manager
             HashSet<string> dirtyRecordIds = GetDirtyRecordIds(sync.SoupName, SmartStore.Store.SmartStore.SoupEntryId);
             int totalSize = dirtyRecordIds.Count;
             sync.TotalSize = totalSize;
-            const int i = 0;
+            int i = 0;
             foreach (
                 JObject record in
                     dirtyRecordIds.Select(
@@ -237,7 +237,8 @@ namespace Salesforce.SDK.SmartSync.Manager
             {
                 await SyncUpOneRecord(target, sync.SoupName, sync.Options.FieldList, record, sync.MergeMode);
 
-                int progress = (i + 1) * 100 / totalSize;
+                i++;
+                int progress = i * 100 / totalSize;
                 if (progress < 100)
                 {
                     UpdateSync(sync, SyncState.SyncStatusTypes.Running, progress, callback);
