@@ -689,8 +689,24 @@ namespace Salesforce.SDK.SmartStore.Store
         /// <param name="statement"></param>
         /// <param name="position"></param>
         /// <returns></returns>
+        private List<String> intTypes = new List<String>() { "Int16", "Int32", "Int64", "UInt16", "UInt32", "UInt64" };
         private object GetObject(SQLiteStatement statement, int position)
         {
+            if (statement[position] == null)
+            {
+                return null;
+            }
+            if (statement[position].GetType().Name == "String")
+            {
+                return statement.GetText(position);
+            }
+            if (intTypes.Contains(statement[position].GetType().Name))
+            {
+                return statement.GetInteger(position);
+            }
+            //
+            //fallback try to detect type using exceptions
+            //
             try
             {
                 return statement.GetText(position);
@@ -726,8 +742,8 @@ namespace Salesforce.SDK.SmartStore.Store
             int columnCount = statement.ColumnCount;
             for (int i = 0; i < columnCount; i++)
             {
-                if (statement.ColumnName(i).EndsWith(SoupCol) || statement.ColumnName(i).StartsWith(SoupCol))
-				{
+                if (statement[i] != null && (statement.ColumnName(i).EndsWith(SoupCol) || statement.ColumnName(i).StartsWith(SoupCol)))
+                {
                     string raw = statement.GetText(i);
                     row.Add(JObject.Parse(raw));
                 }
@@ -812,7 +828,14 @@ namespace Salesforce.SDK.SmartStore.Store
             }
             if (SmartStoreType.SmartInteger.ColumnType.Equals(indexSpec.SmartType.ColumnType))
             {
-                contentValues.Add(indexSpec.ColumnName, Int32.Parse(value.ToString()));
+                if (value.ToString() == "")
+                {
+                    contentValues.Add(indexSpec.ColumnName, Int32.Parse("0"));
+                }
+                else
+                {
+                    contentValues.Add(indexSpec.ColumnName, Int32.Parse(value.ToString()));
+                }
             }
             else if (SmartStoreType.SmartString.ColumnType.Equals(indexSpec.SmartType.ColumnType))
             {
@@ -820,7 +843,14 @@ namespace Salesforce.SDK.SmartStore.Store
             }
             else if (SmartStoreType.SmartFloating.ColumnType.Equals(indexSpec.SmartType.ColumnType))
             {
-                contentValues.Add(indexSpec.ColumnName, Double.Parse(value.ToString()));
+                if (value.ToString() == "")
+                {
+                    contentValues.Add(indexSpec.ColumnName, Double.Parse("0"));
+                }
+                else
+                {
+                    contentValues.Add(indexSpec.ColumnName, Double.Parse(value.ToString()));
+                }
             }
         }
 
