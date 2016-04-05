@@ -88,11 +88,14 @@ namespace Salesforce.SDK.SmartSync.Model
             JToken id;
             var request = RestRequest.GetRequestForCreate(syncManager.ApiVersion, objectType, fields);
             var response = await syncManager.SendRestRequest(request);
-            var responseObject = response.AsJObject;
-            responseObject.TryGetValue(Constants.Lid, out id);
-            if (id != null)
+            if (response.Success)
             {
-                return response.Success ? id.ToString() : null;
+                var responseObject = response.AsJObject;
+                responseObject.TryGetValue(Constants.Lid, out id);
+                if (id != null)
+                {
+                    return id.ToString();
+                }
             }
             return null;
         }
