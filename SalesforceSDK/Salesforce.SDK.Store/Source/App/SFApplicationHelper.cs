@@ -56,7 +56,7 @@ namespace Salesforce.SDK.App
                 // TODO: change this value to a cache size that is appropriate for your application
                 rootFrame.CacheSize = 1;
 
-                SuspensionManager.RegisterFrame(rootFrame, "AppFrame");
+                //SuspensionManager.RegisterFrame(rootFrame, "AppFrame");
 
                 // Place the frame in the current Window
                 Window.Current.Content = rootFrame;
@@ -65,7 +65,7 @@ namespace Salesforce.SDK.App
             return rootFrame;
         }
 
-        private async Task RestoreStatus(ApplicationExecutionState previousExecutionState)
+        /*private async Task RestoreStatus(ApplicationExecutionState previousExecutionState)
         {
             // Do not repeat app initialization when the Window already has content,
             // just ensure that the window is active
@@ -82,7 +82,7 @@ namespace Salesforce.SDK.App
                     //Assume there is no state and continue
                 }
             }
-        }
+        }*/
 
         /// <summary>
         ///     Invoked when the application is launched normally by the end user.  Other entry points
@@ -92,10 +92,10 @@ namespace Salesforce.SDK.App
         /// <remarks>This method ensures that Window.Current.Content is set to a valid Frame.</remarks>
         /// <remarks>This method calls Window.Current.Activate.</remarks>
         /// <param name="e">Details about the launch request and process.</param>
-        public async void OnLaunched(LaunchActivatedEventArgs e)
+        public void OnLaunched(LaunchActivatedEventArgs e)
         {
             var rootFrame = CreateRootFrame();
-            await RestoreStatus(e.PreviousExecutionState);
+            //await RestoreStatus(e.PreviousExecutionState);
 
             if (rootFrame.Content == null)
             {
@@ -112,19 +112,19 @@ namespace Salesforce.SDK.App
             Window.Current.Activate();
         }
 
-        public async void OnActivated(IActivatedEventArgs args)
+        public void OnActivated(IActivatedEventArgs args)
         {
             CreateRootFrame();
-            await RestoreStatus(args.PreviousExecutionState);
+            //await RestoreStatus(args.PreviousExecutionState);
 
             PincodeManager.TriggerBackgroundedPinTimer();
         }
 
-        public async void OnSuspending(SuspendingEventArgs e)
+        public void OnSuspending(SuspendingEventArgs e)
         {
             SuspendingDeferral deferral = e.SuspendingOperation.GetDeferral();
             PincodeManager.SavePinTimer();
-            await SuspensionManager.SaveAsync();
+            //await SuspensionManager.SaveAsync();
             deferral.Complete();
         }
     }
